@@ -1,0 +1,261 @@
+﻿{% extends "homepage.html" %}
+
+{% block css_js %}
+{#    <script type="text/javascript" src="static/js/DrugRisk/index.js"></script>#}
+    <script type="text/javascript" src="http://libs.baidu.com/jquery/1.10.2/jquery.min.js"></script>
+    <script type="text/javascript"
+            src="https://cdn.staticfile.org/twitter-bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    <script type="text/javascript"
+            src="https://cdn.bootcss.com/bootstrap-validator/0.5.3/js/bootstrapValidator.js"></script>
+    <link href="static/neo4jd3/neo4jd3.min.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/DrugRisk/neovis.js"></script>
+    <script type="text/javascript" src="static/js/DrugRisk/index.js"></script>
+    <script src="static/neo4jd3/d3.v4.min.js"></script>
+    <script src="static/neo4jd3/neo4jd3.min.js"></script>
+{% endblock %}
+{%block css %}
+
+<style>
+    #diagSearchviz {
+        width: 100%;
+        height: 100%;
+        border: 1px solid lightgray;
+        font: 22pt arial;
+        margin: 20px;
+        padding: 10px;
+    }
+    label {
+        display: inline-block;
+        width: 100px;
+    }
+    input{
+        width:200px;
+    }
+</style>
+{% endblock %}
+
+
+
+{% block content %}
+<div class="row  border-bottom">
+    <div class="col-lg-12">
+        <div class="tab_title">
+            <ul class="nav nav-pills">
+                <li class="current">
+                    <a href="">疾病查询</a>
+                </li>
+                <li>
+                    <a href="/medSearch">药品查询</a>
+                </li>
+                <li>
+                    <a href="/patternSearch">频繁用药模式查询</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-12">
+        <form class="form-inline wrap_search">
+            {% csrf_token %}   <!--加入这行 -->
+            <div class="row  m-t p-w-m">
+
+                <div class="form-group m-r m-l">
+                    <label>疾病</label>
+                </div>
+
+                <div class="form-group">
+                    <input type="text" placeholder="请输入疾病" class="form-control" id="diagInput">
+                </div>
+
+
+                <div class="form-group">
+                    <div class="input-group">
+                        <span class="input-group-btn">
+                            <button type="button" class="btn  btn-primary search" onclick="search()">
+                                <i class="fa fa-search"></i>查询
+                            </button>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <hr>
+        </form>
+    </div>
+<div class="row">
+    <div class="col-lg-7" id="diagSearchviz"  style="float:left"></div>
+    <div class="col-lg-5" id="analysis"  style="float:left">
+        <div id="analysis"  style="text-align:left;margin:10px;">
+            <div style="margin-bottom:10px;"><h3>该疾病在历史真实处方中出现</h3><div id="count">{{ count }}</div><h3>次</h3></div>
+            <div class="row border-bottom">
+                <div class="col-lg-3"></div>
+            </div>
+            <div style="margin-bottom:10px;"><h3>疾病分布：</h3></div>
+            <table class="table table-striped table-hover table-responsive m-t" id="adverse_table">
+                <thead>6
+                <tr>
+                    <th style="width:5%">性别</th>
+                    <th style="width:5%">40%男性（20人）</th>
+                    <th style="width:10%">60%女性（30人）</th>
+                </tr>
+                </thead>
+            </table>
+            <div style="margin-bottom:10px;"><h3>年龄分布：</h3></div>
+            <table class="table table-striped table-hover table-responsive m-t" id="adverse_table">
+                <thead>
+                <tr>
+                    <th style="width:5%">性别</th>
+                    <th style="width:5%">40%男性（20人）</th>
+                    <th style="width:10%">60%女性（30人）</th>
+                </tr>
+                </thead>
+            </table>
+
+            <div style="margin-bottom:10px;"><h3>常用药物：</h3></div>
+            <table class="table table-striped table-hover table-responsive m-t" id="adverse_table">
+                <thead>
+                <tr>
+                    <th style="width:5%">药物</th>
+                    <th style="width:5%">次数</th>
+                </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th style="width:5%">药品1</th>
+                        <th style="width:5%">15</th>
+                    </tr>
+                </tbody>
+                <tbody>
+                    <tr>
+                        <th style="width:5%">药品3</th>
+                        <th style="width:5%">12</th>
+                    </tr>
+                </tbody>
+                <tbody>
+                    <tr>
+                        <th style="width:5%">药品5</th>
+                        <th style="width:5%">9</th>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+
+
+
+</div>
+
+{% endblock %}
+{% block js %}
+<script type="text/javascript">
+    function search(){
+        var diag = document.getElementById("diagInput").value
+        draw(diag);
+        getCount(diag);
+        {#getAge(diag);#}
+        {#getDiag(diag);#}
+        {#getMed(diag);#}
+    }
+
+    function getCount(diag) {
+        var data = {
+            diag:diag
+        };
+        $.ajax({
+            url:"KnowledgeSearch/getCount",
+            data: data,
+            type: "POST",
+            dataType: "json",
+            success: function (data) {
+                //解析并显示数据表
+                build_table(data);
+                //解析并显示分页数据
+                build_page_nav(data);
+            }, fail: function (err) {
+                console.log(err);
+            }
+        })
+    }
+    function build_table(){
+
+        $("#track_table tbody").empty();
+        var track = data.list;
+        // console.log(users.length);
+        if (track.length == 0) {
+            var item = $("<td></td>").attr("colspan", "6").append("暂无数据");
+            $("<tr></tr>").append(item).appendTo("#track_table tbody");
+            return;
+        }
+        var offset = (data.pages.current - 1) * data.pages.page_size
+        //遍历元素
+        $.each(track, function (index, item) {
+
+            var seq = $("<td></td>").append(index + 1 + offset);
+            var venue = $("<td onclick=clickTd(this) id='venue' style='text-decoration: underline;color:#3975A6;cursor:pointer;'></td>").append(item.venue);
+            var no = $("<td onclick=clickTd(this) id='no' style='text-decoration: underline;color:#3975A6;cursor:pointer;'></td>").append(item.no);
+            var name = $("<td onclick=clickTd(this) id='name' style='text-decoration: underline;color:#3975A6;cursor:pointer;'></td>").append(item.name);
+
+            if (item.type == 1)
+                var type = $("<td onclick=clickTd(this) id='type' value='1' style='cursor:pointer;'></td>").append("<div style='width:20px;height:20px;background-color:#36B44C'></div>");
+            if (item.type == 2)
+                var type = $("<td onclick=clickTd(this) id='type' value='2' style='cursor:pointer;'></td>").append("<div style='width:20px;height:20px;background-color:#FABC18'></div>");
+
+            var time = $("<td></td>").append(item.time);
+
+            $("<tr></tr>").append(seq).append(venue).append(no).append(name).append(type).append(time).appendTo("#track_table tbody");
+
+        })
+    }
+
+
+    var diagSearchviz;
+    function draw(diag) {
+        {#var diag = document.getElementById("diagInput").value#}
+        console.log("diag:",diag)
+        if (diag == null || diag == "")
+            cypher = "match (d:diag{name:\"休克\"})-[r]-(m) return d,r,m"
+        else
+            cypher = "match (d:diag{name:\""+diag+"\"})-[r]-(m) return d,r,m"
+        var config = {
+            container_id: "diagSearchviz",
+            server_url: "bolt://localhost:7687",
+            {#server_url: "bolt://it.ye-soft.com:7687",#}
+            server_user: "neo4j",
+            server_password: "sorts-swims-burglaries",
+            labels: {
+                "patient": {
+                    "caption": "pid",
+                    "age": "age",
+                    "height": "height",
+                    "sex": "sex",
+                    "weight":"weight",
+                    //"sizeCypher": "MATCH (n) WHERE id(n) = {id} MATCH (n)-[r]-() RETURN sum(r.weight) AS c"
+                },
+                "med": {
+                    "caption": "medName",
+                    "medSpec": "medSpec",
+                }
+            },
+            relationships: {
+                "huse": {
+                    "thickness": "weight",
+                    "caption": false
+                }
+            },
+            initial_cypher: cypher
+        };
+
+        neo4jd3viz = new NeoVis.default(config);
+        neo4jd3viz.render();
+        console.log(neo4jd3viz);
+
+    }
+    window.onload = draw();
+</script>
+
+
+{% endblock %}
+

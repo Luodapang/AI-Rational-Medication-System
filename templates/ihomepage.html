@@ -1,0 +1,12 @@
+{% extends "homepage.html" %}
+{% block content %}
+    {#    <frameset cols="30%,*" frameborder="no" border="0" framespacing="0">#}
+    <div style="height: 850px;">
+        <frameset>
+            <iframe src="ileft" name="leftFrame" noresize="noresize" id="leftFrame" title="leftFrame"
+                    style="width:35%;height:100%"></iframe>
+            <iframe src="iright" name="mainFrame" id="mainFrame" title="mainFrame"
+                    style="width:64%;height:100%"></iframe>
+        </frameset>
+    </div>
+{% endblock %}

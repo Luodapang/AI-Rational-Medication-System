@@ -1,0 +1,401 @@
+﻿{% extends "homepage.html" %}
+
+{% block css_js %}
+{#    <script type="text/javascript" src="static/js/DrugRisk/index.js"></script>#}
+    <script type="text/javascript" src="http://libs.baidu.com/jquery/1.10.2/jquery.min.js"></script>
+    <script type="text/javascript"
+            src="https://cdn.staticfile.org/twitter-bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    <script type="text/javascript"
+            src="https://cdn.bootcss.com/bootstrap-validator/0.5.3/js/bootstrapValidator.js"></script>
+    <link href="static/neo4jd3/neo4jd3.min.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/DrugRisk/neovis.js"></script>
+    <script type="text/javascript" src="static/js/DrugRisk/index.js"></script>
+    <script src="https://cdn.staticfile.org/echarts/4.3.0/echarts.min.js"></script>
+    <script src="static/neo4jd3/d3.v4.min.js"></script>
+    <script src="static/neo4jd3/neo4jd3.min.js"></script>
+{% endblock %}
+{%block css %}
+
+<style>
+    #diagSearchviz {
+        width: 75%;
+        height: 500px;
+        border: 1px solid lightgray;
+        font: 22pt arial;
+        margin: 10px;
+    }
+    label {
+        display: inline-block;
+        width: 100px;
+    }
+    input{
+        width:200px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row  border-bottom">
+    <div class="col-lg-12">
+        <div class="tab_title">
+            <ul class="nav nav-pills">
+                <li class="current">
+                    <a href="/diagSearch">疾病查询</a>
+                </li>
+                <li>
+                    <a href="/medSearch">药品查询</a>
+                </li>
+{#                <li>#}
+{#                    <a href="/prescriptionSearch">处方查询</a>#}
+{#                </li>#}
+{#                <li>#}
+{#                    <a href="/patternSearch">频繁用药模式查询</a>#}
+{#                </li>#}
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-12">
+        <form class="form-inline wrap_search">
+            {% csrf_token %}   <!--加入这行 -->
+            <div class="row  m-t p-w-m">
+
+                <div class="form-group m-r m-l">
+                    <label>疾病</label>
+                </div>
+
+                <div class="form-group">
+{#                    <input type="text" placeholder="请输入疾病" class="form-control" id="diagInput">#}
+                </div>
+
+                <div class="form-group">
+                    <input type="text" name="diagInput" placeholder="请选择疾病" class="form-control" id="diagInput"  list="diagbatch_list" autocomplete="off">
+                    <datalist id="diagbatch_list">
+                    </datalist>
+                </div>
+
+
+                <div class="form-group">
+                    <div class="input-group">
+                        <span class="input-group-btn">
+                            <button type="button" class="btn  btn-primary search" onclick="search()">
+                                <i class="fa fa-search"></i>查询
+                            </button>
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+            <hr>
+        </form>
+    </div>
+</div>
+
+<div id="diagSearchviz" style="float:left;width: 65%;height: 600px;border: 1px solid lightgray;margin: 5px;"></div>
+<div id="analysis" style="float:left;width:33%;height: 600px;margin: 3px;">
+    <div id="count"><h3>该疾病在历史真实处方中出现{{ count }}次</h3></div>
+{#    <div style="float:left;margin-bottom:10px;"><h3>  </h3></div>#}
+        <div id="piePic" style="align:center;width: 95%;height:36%;margin-bottom: 10px"></div>
+{#        <div id="piePic" style="float:left;width: 90%;height:36%;margin-bottom: 10px"></div>#}
+{#        <div id="piePic" style="width: 50%;height:40%;"></div>#}
+{#    <div style="clear: both"></div>#}
+    <div style="float:left;margin-bottom:10px;"><h3>  </h3></div>
+        <div id="agePic" style="align:center;width: 95%;height:36%;margin-bottom: 10px"></div>
+{#        <div id="agePic" style="float:left;width: 90%;height:36%;margin-bottom: 10px"></div>#}
+{#    <div style="clear: both"></div>#}
+    <div style="margin-bottom:10px;"><h3> 常用药物：</h3></div>
+    <table id="medTable" class="table table-striped" style="width:85%;margin-left: 10%">
+      <thead>
+        <tr>
+            <th>药物</th>
+            <th>次数</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Tanmay</td>
+          <td>15</td>
+        </tr>
+        <tr>
+          <td>y</td>
+          <td>11</td>
+        </tr>
+        <tr>
+          <td>may</td>
+          <td>5</td>
+        </tr>
+      </tbody>
+    </table>
+</div>
+
+
+<script type="text/javascript">
+    // 基于准备好的dom，初始化echarts实例
+    var myChart = echarts.init(document.getElementById('piePic'));
+    var num_male = 0;
+    var num_female = 0;
+    myChart.setOption({
+        title: {
+            text: '患者性别比例图',
+            left: 'center',
+            top: 5
+        },
+        series : [
+            {
+                name: '访问来源',
+                type: 'pie',    // 设置图表类型为饼图
+                radius: '70%',  // 饼图的半径，外半径为可视区尺寸（容器高宽中较小一项）
+                center: ['50%', '60%'],
+                data:[          // 数据数组，name 为数据项名称，value 为数据项值
+                    {value:num_male, name:'男'},
+                    {value:num_female, name:'女'}
+                ] ,
+                itemStyle:{
+                normal:{
+                      label:{
+                        show: true,
+                        formatter: '{b} : {c} ({d}%)'
+                      },
+                      labelLine :{show:true}
+                    }
+                }
+            }
+        ]
+    })
+    var myageChart = echarts.init(document.getElementById('agePic'));
+    myageChart.setOption({
+        tooltip: {
+        },
+        title: {
+            text: '患者年龄分布',
+            left: 'center',
+            top: 5
+        },
+        xAxis: {name:"年龄"},
+        yAxis: {name:"频数"},
+        series: [{
+            symbolSize: 5,
+            data: [
+                [10.0, 8.04],
+                [8.0, 6.95],
+                [7.0, 4.82],
+                [5.0, 5.68],
+                [42, 4],
+                [56, 3],
+                [59, 1],
+                [74, 5],
+                [84, 2]
+            ],
+            type: 'scatter'
+        }]
+    });
+
+</script>
+{% endblock %}
+{% block js %}
+<script type="text/javascript">
+    var defaultdiag = "休克";
+    window.onload = function(){
+        draw(defaultdiag);
+        diagSearch(defaultdiag);
+        var inputdata = $('input#diagInput').val();
+        if(localStorage.getItem("Diags")){
+            var diagslist = localStorage.getItem("Diags").split(",");
+            for (var i = 0; i < diagslist.length; i++) {
+                $('datalist#diagbatch_list').append('<option value="' + diagslist[i] + '">' + diagslist[i] + '</option>');
+        }
+        }
+    }
+    var diagSearchviz;
+    var num_male = 1;
+    var num_female = 1;
+    function draw(diag) {
+        var hostAndPort=document.location.host;
+        var hostAddress = hostAndPort.substr(0,hostAndPort.length - 4);
+        console.log("ip:", hostAddress);
+        console.log("diag:",diag);
+        cypher = "match (d:diag{diag:\""+diag+"\"})-[r]-(m) return d,r,m";
+        var config = {
+            container_id: "diagSearchviz",
+            server_url: "bolt://"+hostAddress+"7687",
+            {#server_url: "bolt://localhost:7687",#}
+            server_user: "neo4j",
+            server_password: "sorts-swims-burglaries",
+            labels: {
+                "patient": {
+                    "caption": "pid",
+                    "age": "age",
+                    "height": "height",
+                    "sex": "sex",
+                    "weight":"weight",
+                    //"sizeCypher": "MATCH (n) WHERE id(n) = {id} MATCH (n)-[r]-() RETURN sum(r.weight) AS c"
+                },
+                "med": {
+                    "caption": "medName",
+                    "medSpec": "medSpec",
+                }
+            },
+            relationships: {
+                "huse": {
+                    "thickness": "weight",
+                    "caption": false
+                }
+            },
+            initial_cypher: cypher
+        };
+
+        neo4jd3viz = new NeoVis.default(config);
+        neo4jd3viz.render();
+        console.log(neo4jd3viz);
+
+    }
+
+    var token = $('input[name=csrfmiddlewaretoken]').val();
+
+    function search(defaultdiag){
+        var diag = document.getElementById("diagInput").value;
+        if (diag == null || diag == "")
+            diag = defaultdiag;
+        draw(diag);
+        diagSearch(diag);
+    }
+
+    function diagSearch(diag) {
+        var hostAndPort=document.location.host;
+        var hostAddress = hostAndPort.substr(0,hostAndPort.length - 4);
+        {#数据置空#}
+        $("#count h3").empty();
+        $("#count h3").append(+'     在历史真实处方中共出现     次');
+        $("#sexTable thead tr").empty();
+        $("#medTable tbody").empty();
+
+        var data = {
+            diag:diag,
+            {#csrfmiddlewaretoken: token,#}
+            csrfmiddlewaretoken:$('[name="csrfmiddlewaretoken"]').val(),
+            {#csrfmiddlewaretoken: '{{ csrf_token }}'#}
+            hostAddress:hostAddress
+        };
+        console.log(data);
+        $.ajax({
+            {#async: false,#}
+            url: "/KnowledgeSearch/diagSearch/",
+            type: "POST",
+            data: data,
+            success: function (data) {
+                console.log(1);
+                console.log(JSON.stringify(data));
+                fillData(diag,data);
+                fillPie(data);
+                fillScatter(data)
+            },
+            error : function(data){
+                console.log(2);
+               console.log(JSON.stringify(data));
+            }
+        })
+    }
+
+    function fillData(diag,data){
+    {#数量#}
+        var counth3=$("#count h3");
+        counth3.empty();
+        counth3.append(diag+' 在历史真实处方中共出现  '+data.data.count+'  次')
+    {#年龄#}
+        $("#ageTable tbody").empty();
+    {#性别#}
+    {#药品#}
+        var medtbody=$("#medTable tbody");
+        $(data.data.medList).each(function (index){
+            var val=data.data.medList[index];
+            var tr=$('<tr></tr>');
+            tr.append('<td>'+ val.med + '</td>' + '<td>'+ val.frequency + '</td>');
+            medtbody.append(tr);
+        });
+    }
+    function fillPie(data){
+        var num_male = 0;
+        var num_female = 0;
+        $(data.data.sexList).each(function (index){
+            if (data.data.sexList[index].sex == '男'){
+                num_male = data.data.sexList[index].score;
+            }
+            if (data.data.sexList[index].sex == '女'){
+                num_female = data.data.sexList[index].score;
+            }
+        });
+        {#饼图#}
+            console.log(num_male);
+            console.log(num_female);
+        myChart.setOption({
+            title: {
+                text: '患者性别比例图',
+                left: 'center',
+                top: 5
+            },
+            series : [
+                {
+                    name: '访问来源',
+                    type: 'pie',    // 设置图表类型为饼图
+                    radius: '70%',  // 饼图的半径，外半径为可视区尺寸（容器高宽中较小一项）
+                    center: ['50%', '60%'],
+                    data:[          // 数据数组，name 为数据项名称，value 为数据项值
+                        {value:num_female, name:'女'},
+                        {value:num_male, name:'男'}
+                    ] ,
+                    itemStyle:{
+                    normal:{
+                          label:{
+                            show: true,
+                            formatter: '{b} : {c} ({d}%)'
+                          },
+                          labelLine :{show:true}
+                        }
+                    }
+                }
+            ]
+        })
+
+    }
+    function fillScatter(data){
+        let ages = data.data.ageList.splice(",");
+        console.log(ages);
+        data = [];
+        for(let i = 0 ; i<ages.length; i++){
+            data.push([ages[i].age,ages[i].frequency])
+        }
+        console.log("data:", data);
+        {#年龄散点图#}
+        myageChart.setOption({
+            tooltip: {
+            },
+            xAxis: {},
+            yAxis: {},
+            series: [{
+                symbolSize: 5,
+                data: data,
+                type: 'scatter'
+            }]
+        })
+
+    }
+
+    $(document).ready(function() {
+        $('input#diagInput').bind('keyup', function () {
+            var inputdata = $('input#diagInput').val();
+            if(localStorage.getItem("Diags")) {
+                var diagslist = localStorage.getItem("Diags").split(",");
+                console.log(diagslist)
+                console.log(diagslist[2])
+                for (var i = 0; i < diagslist.length; i++) {
+                    if (diagslist[i].indexOf(inputdata) != -1)
+                        $('datalist#diagbatch_list').append('<option value="' + diagslist[i] + '">' + diagslist[i] + '</option>');
+                }
+            }
+        });
+    });
+
+</script>
+
+{% endblock %}

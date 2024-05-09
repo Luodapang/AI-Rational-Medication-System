@@ -1,0 +1,321 @@
+﻿{% extends "homepage.html" %}
+
+{% block css_js %}
+{#    <script type="text/javascript" src="static/js/DrugRisk/index.js"></script>#}
+    <script type="text/javascript" src="http://libs.baidu.com/jquery/1.10.2/jquery.min.js"></script>
+    <script type="text/javascript"
+            src="https://cdn.staticfile.org/twitter-bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    <script type="text/javascript"
+            src="https://cdn.bootcss.com/bootstrap-validator/0.5.3/js/bootstrapValidator.js"></script>
+    <link href="static/neo4jd3/neo4jd3.min.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/DrugRisk/neovis.js"></script>
+    <script type="text/javascript" src="static/js/DrugRisk/index.js"></script>
+    <script src="https://cdn.staticfile.org/echarts/4.3.0/echarts.min.js"></script>
+    <script src="static/neo4jd3/d3.v4.min.js"></script>
+    <script src="static/neo4jd3/neo4jd3.min.js"></script>
+{% endblock %}
+{%block css %}
+
+<style>
+    #viz {
+        width: 75%;
+        height: 500px;
+        border: 1px solid lightgray;
+        font: 22pt arial;
+        margin: 10px;
+    }
+    label {
+        display: inline-block;
+        width: 100px;
+    }
+    input{
+        width:200px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row  border-bottom">
+    <div class="col-lg-12">
+        <div class="tab_title">
+            <ul class="nav nav-pills">
+                <li>
+                    <a href="/diagSearch">疾病查询</a>
+                </li>
+                <li class="current">
+                    <a href="/medSearch">药品查询</a>
+                </li>
+{#                <li>#}
+{#                    <a href="/prescriptionSearch">处方查询</a>#}
+{#                </li>#}
+{#                <li>#}
+{#                    <a href="/patternSearch">频繁用药模式查询</a>#}
+{#                </li>#}
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-12">
+        <form class="form-inline wrap_search">
+            <div class="row  m-t p-w-m">
+            {% csrf_token %}   <!--加入这行 -->
+                <div class="form-group m-r m-l">
+                    <label>药品</label>
+                </div>
+
+                <div class="form-group">
+                    <input type="text" name="medInput" placeholder="请输入药物名称" class="form-control" id="medInput"  list="medbatch_list" autocomplete="off">
+                    <datalist id="medbatch_list">
+                    </datalist>
+{#                    <input type="text" placeholder="请选择药品" class="form-control" id="medInput">#}
+                </div>
+
+
+                <div class="form-group">
+                    <div class="input-group">
+                        <span class="input-group-btn">
+                            <button type="button" class="btn  btn-primary search" onclick="search()">
+                                <i class="fa fa-search"></i>查询
+                            </button>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <hr>
+        </form>
+    </div>
+</div>
+
+<div id="medSearchviz" style="float:left;width: 60%;height: 500px;border: 1px solid lightgray;margin: 5px;"></div>
+<div id="analysis" style="float:left;width:38%;height: 500px;margin: 5px;">
+    <div id="count"><h3>该药物在历史真实处方中出现{{ count }}次</h3></div>
+    <div style="margin-bottom:10px;"><h3> 成分：</h3></div><div id="ingredient"> </div>
+    <div style="margin-bottom:10px;"><h3> 适应症：</h3></div><div id="indication"> </div>
+    <div style="margin-bottom:10px;"><h3> 常用于疾病：</h3></div>
+    <table id="diagTable" class="table table-striped" >
+      <thead>
+        <tr>
+            <th>疾病</th>
+            <th>次数</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td> </td>
+          <td> </td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-bottom:10px;"><h3>药品禁忌</h3></div>
+    <div id="banmedsList"> </div>
+    <div id="bandiagsList"> </div>
+    <div id="banpatientsList"> </div>
+</div>
+
+{% endblock %}
+{% block js %}
+<script type="text/javascript">
+    var defaultmed = "注射用美罗培南";
+    window.onload = function(){
+        draw(defaultmed);
+        medSearch(defaultmed);
+        var inputdata = $('input#medInput').val();
+        if(medslist = localStorage.getItem("Meds")){
+            var medslist = localStorage.getItem("Meds").split(",");
+            for (var i = 0; i < medslist.length; i++) {
+                $('datalist#medbatch_list').append('<option value="' + medslist[i] + '">' + medslist[i] + '</option>');
+            }
+        }
+
+    }
+
+    var medSearchviz;
+    function draw(med) {
+        var hostAndPort=document.location.host;
+        var hostAddress = hostAndPort.substr(0,hostAndPort.length - 4);
+        {#var med = document.getElementById("medInput").value#}
+        {#console.log("med:",med)#}
+        {#cypher = "match (m:med{name:\"注射用美罗培南\"})-[r]-(k) return m,r,k"#}
+        {#if(med != "")#}
+        cypher = "match (m:med{medName:\""+med+"\"})-[r]-(k) return m,r,k"
+        var config = {
+            container_id: "medSearchviz",
+            server_url: "bolt://"+hostAddress+"7687",
+            {#server_url: "bolt://localhost:7687",#}
+            server_user: "neo4j",
+            server_password: "sorts-swims-burglaries",
+            labels: {
+                "patient": {
+                    "caption": "pid",
+                    "age": "age",
+                    "height": "height",
+                    "sex": "sex",
+                    "weight":"weight",
+                    //"sizeCypher": "MATCH (n) WHERE id(n) = {id} MATCH (n)-[r]-() RETURN sum(r.weight) AS c"
+                },
+                "med": {
+                    "caption": "medName",
+                    "medSpec": "medSpec",
+                }
+            },
+            relationships: {
+                "huse": {
+                    "thickness": "weight",
+                    "caption": false
+                }
+            },
+            initial_cypher: cypher
+        };
+
+        neo4jd3viz = new NeoVis.default(config);
+        neo4jd3viz.render();
+        console.log(neo4jd3viz);
+
+    }
+
+    var token = $('input[name=csrfmiddlewaretoken]').val();
+    function search(){
+        var med = document.getElementById("medInput").value
+        draw(med);
+        medSearch(med);
+    }
+
+    function medSearch(med) {
+        {#数据置空#}
+        $("#count h3").empty();
+        $("#diagTable tbody").empty();
+        $("#indication").empty();
+        $("#ingredient").empty();
+        $("#indication").append(" ");
+        $("#ingredient").append(" ");
+        $("#count h3").append(+'     在历史真实处方中共出现     次');
+
+        var hostAndPort=document.location.host;
+        var hostAddress = hostAndPort.substr(0,hostAndPort.length - 4);
+        var data = {
+            med:med,
+            csrfmiddlewaretoken:$('[name="csrfmiddlewaretoken"]').val(),
+            hostAddress: hostAddress
+        };
+        console.log(data);
+        $.ajax({
+            {#async: false,#}
+            url: "/KnowledgeSearch/medSearch/",
+            type: "POST",
+            data: data,
+            success: function (data) {
+                console.log(JSON.stringify(data));
+                fillData(med,data);
+            }
+        })
+    }
+
+    function fillData(med,data){
+    {#数量#}
+        var counth3=$("#count h3");
+        {#counth3.append(' 在历史真实处方中共出现  '+data.data.count+'  次')#}
+    {#成分#}
+        var ingredient=$("#ingredient");
+        ingredient.empty();
+        ingredient.append(" ");
+        if (data.data.ingredientsList.length>0) {
+            $(data.data.ingredientsList).each(function (index){
+                var val=data.data.ingredientsList[index];
+                var tr= '   ';
+                tr = tr + val + "  ";
+                ingredient.append(tr);
+            });
+        }
+        else{
+            var tr= '   ';
+            tr = tr + " 暂无数据 ";
+            ingredient.append(tr);
+        }
+    {#适应症#}
+        var indication=$("#indication");
+        indication.empty();
+        indication.append(" ");
+        if (data.data.indicationList.length>0) {
+            $(data.data.indicationList).each(function (index){
+                var val=data.data.indicationList[index];
+                var tr= '   ';
+                tr = tr + val + "  ";
+                indication.append(tr);
+            });
+        }
+        else {
+            var tr= '   ';
+            tr = tr + " 暂无数据 ";
+            indication.append(tr);
+        }
+    {#疾病#}
+        var diagtbody=$("#diagTable tbody");
+        diagtbody.empty();
+        diagtbody.append(" ");
+        $(data.data.diagList).each(function (index){
+            var val=data.data.diagList[index];
+            var tr=$('<tr></tr>');
+            tr.append('<td>'+ val.diag + '</td>' + '<td>'+ val.frequency + '</td>');
+            diagtbody.append(tr);
+        });
+    {#禁忌#}
+        var banmedsList=$("#banmedsList");
+        banmedsList.empty();
+        if (data.data.banmedsList.length>0) {
+            banmedsList.append(" 与以下药品禁忌联用：");
+            $(data.data.banmedsList).each(function (index) {
+                var val = data.data.banmedsList[index];
+                var tr = '   ';
+                tr = tr + val + "  ";
+                banmedsList.append(tr);
+            });
+        }
+        else{
+            var tr = '   ';
+            tr = tr +  " 无 ";
+            banmedsList.append(tr);
+        }
+        var bandiagsList=$("#bandiagsList");
+        bandiagsList.empty();
+        if (data.data.bandiagsList.length>0) {
+            bandiagsList.append(" 有以下疾病禁忌使用药品：");
+            $(data.data.bandiagsList).each(function (index) {
+                var val = data.data.bandiagsList[index];
+                var tr = '   ';
+                tr = tr + val + "  ";
+                bandiagsList.append(tr);
+            });
+        }
+        var banpatientsList=$("#banpatientsList");
+        banpatientsList.empty();
+        if (data.data.banpatientsList.length>0) {
+            banpatientsList.append(" 以下患者禁忌使用药品：");
+            $(data.data.banpatientsList).each(function (index) {
+                var val = data.data.banpatientsList[index];
+                var tr = '   ';
+                tr = tr + val + "  ";
+                banpatientsList.append(tr);
+            });
+        }
+    }
+
+    $(document).ready(function() {
+        $('input#medInput').bind('keyup', function () {
+            {#alert("here2");#}
+            var inputdata = $('input#medInput').val();
+            if(localStorage.getItem("Meds")){
+                var medslist = localStorage.getItem("Meds").split(",");
+                console.log(medslist)
+                for (var i = 0; i < medslist.length; i++) {
+                    if (medslist[i].indexOf(inputdata) != -1)
+                        $('datalist#medbatch_list').append('<option value="' + medslist[i] + '">' + medslist[i] + '</option>');
+                }
+            }
+        });
+    });
+
+</script>
+
+{% endblock %}
+

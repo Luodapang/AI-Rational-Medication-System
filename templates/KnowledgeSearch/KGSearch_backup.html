@@ -1,0 +1,119 @@
+﻿{% extends "homepage.html" %}
+
+{% block css_js %}
+{#    <script type="text/javascript" src="static/js/DrugRisk/index.js"></script>#}
+    <script type="text/javascript" src="http://libs.baidu.com/jquery/1.10.2/jquery.min.js"></script>
+    <script type="text/javascript"
+            src="https://cdn.staticfile.org/twitter-bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    <script type="text/javascript"
+            src="https://cdn.bootcss.com/bootstrap-validator/0.5.3/js/bootstrapValidator.js"></script>
+    <link href="static/neo4jd3/neo4jd3.min.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/DrugRisk/neovis.js"></script>
+    <script type="text/javascript" src="static/js/DrugRisk/index.js"></script>
+    <script src="static/neo4jd3/d3.v4.min.js"></script>
+    <script src="static/neo4jd3/neo4jd3.min.js"></script>
+{% endblock %}
+{%block css %}
+
+<style>
+    #viz {
+        width: 75%;
+        height: 500px;
+        border: 1px solid lightgray;
+        font: 22pt arial;
+        margin: 10px;
+    }
+    label {
+        display: inline-block;
+        width: 100px;
+    }
+    input{
+        width:200px;
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="row border-bottom">
+    <div class="col-lg-12">
+        <div class="tab_title">
+            <ul class="nav nav-pills">
+                <li class="current">
+                    <a href="">知识查询小助手</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="row border-bottom margin10">
+    <div class="col-lg-3" style="padding:20px;border: 1px #2a2e36 ">
+        <div style="height: 500px;">
+        <div><h3>Connection Details:</h3>
+        <label for="url" style="width: 100px;">URL</label><input id="url" name="url" type="text" value="bolt://localhost:7687" style="width: 200px;"/><br/>
+{#        <label for="url" style="width: 100px;">URL</label><input id="url" name="url" type="text" value="bolt://it.ye-soft.com:7687" style="width: 200px;"/><br/>#}
+        <label for="user" style="width: 100px;">Username</label><input id="user" name="user" type="text" value="neo4j" style="width: 200px;"/><br/>
+        <label for="pass" style="width: 100px;">Password</label><input id="pass" name="pass" type="password" value="test" style="width: 200px;"/>
+        </div>
+        <div><h3>Styling Nodes:</h3>
+        <label for="label" style="width: 100px;">Node-Label</label><input id="label" name="label" type="text" value="Character" style="width: 200px;"/><br/>
+        <label for="caption" style="width: 100px;">Label</label><input id="caption" name="caption" type="text" value="name" style="width: 200px;"/><br/>
+        <label for="size" style="width: 100px;">Size</label><input id="size" name="size" type="text" value="pagerank" style="width: 200px;"/><br/>
+        <label for="color" style="width: 100px;">Color</label><input id="community" name="community" type="text" value="community" style="width: 200px;"/>
+        </div>
+        <div><h3>Styling Relationship:</h3>
+        <label for="type" style="width: 100px;">Relationship-Type</label><input id="type" name="type" type="text" value="INTERACTS" style="width: 200px;"/><br/>
+        <label for="thickness" style="width: 100px;">Thickness</label><input id="thickness" name="thickness" type="text" value="weight" style="width: 200px;"/><br/>
+        <label for="rel_caption" style="width: 100px;">Caption</label><input id="rel_caption" name="rel_caption" type="text" value="" style="width: 200px;"/>
+        </div>
+        <div><h3>Cypher query: </h3>
+        <textarea rows="4" cols=50 id="cypher">MATCH (n:med)-[r:INTERACTION]->(m:med) RETURN n,r,m limit 100</textarea><br>
+        <input type="submit" value="Submit" id="reload" onclick="draw()">
+        <input type="submit" value="Stabilize" id="stabilize">
+        </div>
+        </div>
+    </div>
+    <div class="col-lg-9"  style="float:left">
+{#        <div id="neo4jd3" style="text-align:left;margin:10px;">#}
+{#        </div>#}
+        <div id="KGSearchviz" style="float:left">
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+{% block js %}
+<script type="text/javascript">
+    window.onload = draw();
+        var KGSearchviz;
+
+        function draw() {
+            var config = {
+                container_id: "KGSearchviz",
+                server_url: $("#url").val(),
+                server_user: $("#user").val(),
+                server_password: $("#pass").val(),
+                labels: {},
+                relationships: {},
+                initial_cypher: $("#cypher").val()
+            };
+            config.labels[$("#label").val()] = {
+                "caption": $("#caption").val(),
+                "size": $("#size").val(),
+                "community": $("#community").val(),
+                //"sizeCypher": "MATCH (n) WHERE id(n) = {id} MATCH (n)-[r]-() RETURN sum(r.weight) AS c"
+            };
+            config.relationships[$("#rel_type").val()] = {
+                "thickness": $("#thickness").val(),
+                "caption": $("#rel_caption").val(),
+            }
+            KGSearchviz = new NeoVis.default(config);
+            KGSearchviz.render();
+            console.log(KGSearchviz);
+        }
+
+</script>
+
+
+{% endblock %}

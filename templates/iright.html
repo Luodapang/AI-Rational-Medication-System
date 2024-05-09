@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>医药说明书提取</title>
+
+    <link href="/static/favicon.ico" type="/static/image/x-icon" rel="shortcut icon">
+
+    <!-- bower:css -->
+    <link rel="stylesheet" href="/static/css/bootstrap.css"/>
+    <link rel="stylesheet" href="/static/css/codemirror.css"/>
+    <link rel="stylesheet" href="/static/css/hotbox.css"/>
+    <link rel="stylesheet" href="/static/css/kityminder.core.css"/>
+    <link rel="stylesheet" href="/static/css/color-picker.min.css"/>
+    <!-- endbower -->
+
+    <link rel="stylesheet" href="/static/css/kityminder.editor.min.css">
+    <script type="text/javascript">
+        var i = 1;
+        var content = "";
+        k = localStorage.getItem("k");
+        if (k == null) {
+            k = 0;
+        }
+        var oldk = localStorage.getItem("oldk");
+        if (oldk == null)
+            oldk = 0;
+        {#console.log("right:k:" + k + "oldk:", oldk);#}
+        var exportflag = 0;
+        var oldexportflag = 0;
+        localStorage.removeItem("content");
+
+        // 导入
+        function loadMap() {
+            fileType = 'json';
+            k = localStorage.getItem("k");
+            content = localStorage.getItem("content");
+            if (content != null) {
+                if (k != oldk || k == null) {
+                    {#console.log("k:" + k + "  oldk:" + oldk);#}
+                    oldk = k;
+                    localStorage.setItem("oldk", oldk);
+                    content = content.replace(/\n/g, "\\n").replace(/\r/g, "\\r")
+                    editor.minder.importData(fileType, content).then(function (data) {
+                        {#console.log(data)#}
+                        $(fileInput).val('');
+                    });
+                }
+            }
+        }
+
+        //导出JSON
+        function exportjson() {
+            //console.log("exportflag:"+exportflag+"  oldexportflag:"+oldexportflag);
+            exportflag = localStorage.getItem("exportflag");
+            if (exportflag != oldexportflag && exportflag != null) {
+                oldexportflag = exportflag;
+                exportJ();
+            }
+        }
+
+        window.onload = function () {
+            //alert("loadMap");
+            //alert("import");
+            localStorage.removeItem("content");
+            window.setInterval(loadMap, 200);
+            window.setInterval(exportjson, 200);
+        }
+
+    </script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        h1.editor-title {
+            background: #393F4F;
+            color: white;
+            margin: 0;
+            height: 40px;
+            font-size: 14px;
+            line-height: 40px;
+            font-family: 'Hiragino Sans GB', 'Arial', 'Microsoft Yahei';
+            font-weight: normal;
+            padding: 0 20px;
+        }
+
+        div.minder-editor-container {
+            position: absolute;
+            top: 40px;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+    </style>
+</head>
+<body ng-app="kityminderDemo" ng-controller="MainController">
+<h1 class="editor-title">
+    脑图展示
+</h1>
+<kityminder-editor on-init="initEditor(editor, minder)" data-theme="fresh-green"></kityminder-editor>
+<iframe name="frameFile" style="display:none;"></iframe>
+</body>
+
+<!-- bower:js -->
+<script src="/static/js/jquery.js"></script>
+<script src="/static/js/bootstrap.js"></script>
+<script src="/static/js/angular.js"></script>
+<script src="/static/js/ui-bootstrap-tpls.js"></script>
+<script src="/static/js/codemirror.js"></script>
+<script src="/static/js/xml.js"></script>
+<script src="/static/js/javascript.js"></script>
+<script src="/static/js/css.js"></script>
+<script src="/static/js/htmlmixed.js"></script>
+<script src="/static/js/markdown.js"></script>
+<script src="/static/js/overlay.js"></script>
+<script src="/static/js/gfm.js"></script>
+<script src="/static/js/ui-codemirror.js"></script>
+<script src="/static/js/marked.js"></script>
+<script src="/static/js/kity.min.js"></script>
+<script src="/static/js/hotbox.js"></script>
+<script src="/static/js/json-diff.js"></script>
+<script src="/static/js/kityminder.core.min.js"></script>
+<script src="/static/js/color-picker.min.js"></script>
+<!-- endbower -->
+
+<script src="/static/js/kityminder.editor.min.js"></script>
+<script src="/static/js/export.js"></script>
+
+<script>
+    angular.module('kityminderDemo', ['kityminderEditor'])
+        .controller('MainController', function ($scope) {
+            $scope.initEditor = function (editor, minder) {
+                window.editor = editor;
+                window.minder = minder;
+            };
+        });
+</script>
+</html>

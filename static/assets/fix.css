@@ -1,0 +1,61 @@
+@charset "utf-8";
+
+/*
+适配手机端，隐藏AD，样式调整
+*/
+
+
+
+.fold-btn{
+	bottom: 50% !important;
+	padding: 20px 2px 20px 0px !important;
+	opacity: 0.3 !important;
+	z-index: 99999999 !important;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	border-radius: 0 0.4em 0.4em 0;
+	font-size: 22px;
+	margin-bottom: -31px
+}
+@media screen and (max-width: 1200px){
+	.el-aside{
+		height: 100%;
+		position: absolute;
+		left: 0;
+		top: 0;
+		z-index: 6000;
+	}
+	.custom-scrollbar{
+		padding: 0 !important
+	}
+	.markdown-content{
+		width: 100% !important
+	}
+	.markdown-content .v-note-wrapper .v-note-panel .v-note-show .v-show-content, .v-note-wrapper .v-note-panel .v-note-show .v-show-content-html{
+		padding: 8px 4% 15px 4%;
+	}
+	.markdown-toc{
+		position: fixed !important;
+		z-index: 5000 !important;
+		min-width: 160px !important;
+		width: 30% !important;
+		height: 30%;
+		bottom: 0 !important;
+		right: 0 !important;
+		top: auto !important;
+		margin: 0 3% 3% 0;
+		transform:none !important;
+		-webkit-transform:none !important;
+		border-radius: 0.6em;
+		box-shadow: 0px 2px 12px #bbbbc1;
+		border: #eee solid 1px;
+		background-color: #eff0f4 !important;
+	}
+	.markdown-toc .el-tree{
+		background-color: transparent !important
+	}
+	.doc-container > .markdown-toc .is-current > .el-tree-node__content{
+		background: #dddde1 !important
+	}
+}

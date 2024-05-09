@@ -1,0 +1,1071 @@
+{% extends "homepage.html" %}
+
+{% block css_js %}
+{#    <script type="text/javascript" src="static/js/DrugRisk/index.js"></script>#}
+    <script type="text/javascript" src="http://libs.baidu.com/jquery/1.10.2/jquery.min.js"></script>
+    <script type="text/javascript"
+            src="https://cdn.staticfile.org/twitter-bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    <script type="text/javascript"
+            src="https://cdn.bootcss.com/bootstrap-validator/0.5.3/js/bootstrapValidator.js"></script>
+    <link href="static/neo4jd3/neo4jd3.min.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/DrugRisk/neovis.js"></script>
+    <script type="text/javascript" src="static/js/DrugRisk/index.js"></script>
+    <script src="static/neo4jd3/d3.v4.min.js"></script>
+    <script src="static/neo4jd3/neo4jd3.min.js"></script>
+{% endblock %}
+{%block css %}
+
+<style>
+    label {
+        display: inline-block;
+        width: 100px;
+    }
+    input{
+        width:200px;
+    }
+    #neo4jd3viz {
+        width: 100%;
+        height: 500px;
+        border: 1px solid lightgray;
+        font: 22pt arial;
+    }
+    #div{border:1px solid #000;}
+    #margin10{margin:15px;}
+    .safeStyle{
+        background: #1cc09f;
+    }
+    .warnStyle{
+        background: #eea236;
+    }
+    .dangerStyle{
+        background: #ff0000;
+    }
+    .prescription{
+        align:left;
+        margin:20px;
+        width:100%;
+        {#height: 500px;#}
+        overflow: hidden;
+        border:1px solid #FF0000;
+    }
+    .neo4jd3 {
+        margin:20px;
+        width:100%;
+        float:left;
+        {#height: 500px;#}
+        overflow: hidden;
+        border:1px solid #000;
+    }
+    .clearfloat{
+        clear:both;
+    }
+
+    .title{ font-family: Microsoft YaHei,'宋体' , Tahoma, Helvetica, Arial, "\5b8b\4f53", sans-serif;}
+    .biaoti{ font-family: Microsoft YaHei,'宋体' , Tahoma, Helvetica, Arial, "\5b8b\4f53", sans-serif;}
+</style>
+{% endblock %}
+
+
+{% block content %}
+{#<div class="row border-bottom">#}
+{#    <div class="col-lg-12">#}
+{#        <div class="tab_title">#}
+{#            <ul class="nav nav-pills">#}
+{#                <li class="current">#}
+{#                    <a href="">合理用药适当性评估</a>#}
+{#                </li>#}
+{#            </ul>#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}
+
+{#<div div id ="prescription" class="prescription" style="float: left;width:66%;height: 550px;margin: 5px;padding:10px;">#}
+{#    <div class="row" style="border: grey solid 2px;padding-top:5px;margin:5px;padding:10px;">#}
+{#        <div class="col-md-2 col-lg-2" style="align:left;align-self: center;align-content: center;padding:0px;">#}
+{#        <input type="file" name = "fileInput" id = "fileInput"  style="display:none;posotion:absolute;width:60px;height:30px;"/>#}
+{#            <a class="btn btn-w-m btn-outline btn-primary pull-left" id="addPrescription" style="width:70px;margin: 5px" onclick="fileInputClick()">#}
+{#                <i class="fa fa-plus"></i> 完整处方#}
+{#            </a>#}
+{#        </div>#}
+{#        <div class="col-md-offset-8 col-lg-offset-8 col-md-2 col-lg-2" style="align:right;">#}
+{#            <button type="button" class="btn btn-primary search" style="width:70px;margin:5px;" onclick="evaluateR()">#}
+{#                <i class="fa fa-search"></i>  评估#}
+{#            </button>#}
+{#        </div>#}
+{#    </div>#}
+{#    <div class="row" style="border: grey solid 2px;height:210px;margin:10px 5px;padding:10px;">#}
+{#        <div class="row">#}
+{#            <div class="col-sm-2 col-lg-2 col-md-2" style="align:center;align-self: center;align-content: center;">#}
+{#                <a class="btn btn-w-m btn-outline btn-primary pull-left" id="addPatient" style="width:50px;margin: 5px" data-toggle="modal" data-target="#myModal">#}
+{#                    <i class="fa fa-plus"></i> 患者#}
+{#                </a>#}
+{#            </div>#}
+{#            <div class="col-sm-4 col-md-3 col-lg-3">#}
+{#                <button type="button" class="btn btn-primary search" style="width:85px;margin:5px;" onclick="deletePatient()">#}
+{#                    <i class="fa "></i>  清空患者#}
+{#                </button>#}
+{#            </div>#}
+{#        </div>#}
+{#        <div class="row">#}
+{#            <div class=" col-md-12 col-lg-12" style="">#}
+{#                <table class="table" id="patient_table">#}
+{#                    <thead>#}
+{#                    <tr>#}
+{#                        <th style="width:15%">患者信息</th>#}
+{#                        <th id="operation" style="width:10%"></th>#}
+{#                    </tr>#}
+{#                    </thead>#}
+{#                    <tbody id="patienttbody">#}
+        {#            <tr>#}
+        {#                <td>1</td>#}
+        {#                <td><img src="../static/images/delete.png" width="20" height="20" onclick="deleteMed("inputdata")"></td>#}
+        {#            </tr>#}
+{#                    </tbody>#}
+{#                </table>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <div class="row" style="margin:5px;">#}
+{#        <div class="col-lg-6 col-md-6" style="height:450px;padding:0px;">#}
+{#            <div style="border: grey solid 2px;margin-right:5px;height:350px;padding:5px;">#}
+{#                <div class="row">#}
+{#                    <div class="col-sm-5 col-md-5 col-lg-4">#}
+{#                    {% csrf_token %}   <!--加入这行 -->#}
+{#                        <input type="text" name="diagInput" placeholder="请选择诊断" class="form-control" id="diagInput"  list="diagbatch_list" autocomplete="off" style="width:150px;margin:10px;">#}
+{#                        <datalist id="diagbatch_list">#}
+{#                        </datalist>#}
+{#                    </div>#}
+{#                    <div class="col-sm-3 col-md-3 col-lg-3">#}
+{#                    {% csrf_token %}   <!--加入这行 -->#}
+{#                    <a class="btn btn-w-m btn-outline btn-primary pull-left" id="adddiag" style="width:50px;margin:10px;float: left;" onclick="addDiag()" >#}
+{#                        <i class="fa fa-plus"></i> 诊断#}
+{#                    </a>#}
+{#                    </div>#}
+{#                    <div class="col-lg-offset-1 col-sm-3 col-md-3 col-lg-3">#}
+{#                        <button type="button" class="btn btn-primary search" style="width:85px;margin:10px;margin-right:20px;" onclick="clearD(this)">#}
+{#                            <i class="fa "></i>  清空诊断#}
+{#                        </button>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="row" style="padding:10px;margin:5px;">#}
+{#                    <table class="table table-striped" id="diag_table" style="width: 100%;padding:5px;">#}
+{#                        <thead>#}
+{#                        <tr>#}
+{#                            <th style="width:80%">诊断疾病</th>#}
+{#                            <th style="width:20%">操作</th>#}
+{#                        </tr>#}
+{#                        </thead>#}
+{#                        <tbody id="diagtbody">#}
+            {#            <tr>#}
+            {#                <td>1</td>#}
+            {#                <td><img src="../static/images/delete.png" width="20" height="20" onclick="deleteMed("inputdata")"></td>#}
+            {#            </tr>#}
+{#                        </tbody>#}
+{#                    </table>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#        <div class="col-lg-6 col-md-6" style="height:450px;padding:0px;">#}
+{#            <div style="border: grey solid 2px;margin-left:5px;height:350px;padding:5px;">#}
+{#                <div class="row" style="">#}
+{#                    <div class="col-sm-5 col-md-5 col-lg-4">#}
+{#                    {% csrf_token %}   <!--加入这行 -->#}
+{#                        <input type="text" name="medInput" placeholder="请选择药物" class="form-control" id="medInput"  list="medbatch_list" autocomplete="off" style="width:150px;margin:10px;">#}
+{#                        <datalist id="medbatch_list">#}
+{#                        </datalist>#}
+{#                    </div>#}
+{#                    <div class="col-sm-3 col-md-3 col-lg-3">#}
+{#                    {% csrf_token %}   <!--加入这行 -->#}
+{#                    <a class="btn btn-w-m btn-outline btn-primary pull-left" id="addMed" style="width:50px;margin:10px;float: left;" onclick="addMed()" >#}
+{#                        <i class="fa fa-plus"></i> 药品#}
+{#                    </a>#}
+{#                    </div>#}
+{#                    <div class="col-lg-offset-1 col-sm-3 col-md-3 col-lg-3">#}
+{#                        <button type="button" class="btn btn-primary search" style="width:85px;margin:10px;margin-right:20px;" onclick="clearP(this)">#}
+{#                            <i class="fa "></i>  清空药品#}
+{#                        </button>#}
+{#                    </div>#}
+{#                </div>#}
+{#                <div class="row" style="padding:10px;margin:5px;">#}
+{#                    <table class="table table-striped" id="med_table" style="width: 100%;padding:5px;">#}
+{#                        <thead>#}
+{#                        <tr>#}
+{#                            <th style="width:80%">药品名</th>#}
+{#                            <th style="width:20%">操作</th>#}
+{#                        </tr>#}
+{#                        </thead>#}
+{#                        <tbody id="presctbody">#}
+            {#            <tr>#}
+            {#                <td>1</td>#}
+            {#                <td><img src="../static/images/delete.png" width="20" height="20" onclick="deleteMed("inputdata")"></td>#}
+            {#            </tr>#}
+{#                        </tbody>#}
+{#                    </table>#}
+{#                </div>#}
+{#            </div>#}
+{#        </div>#}
+{#    </div>#}
+{##}
+{#    <div style="clear: both;"></div>#}
+{#</div>#}
+
+<div id ="prescription" class="prescription" style="border-radius: 3rem!important;background-color:lightgrey;border: grey solid 2px;margin:20px;padding:5px;float:left;width:44%;height: 800px;">
+
+    <div name="inputAndDetect" class="row roundpill" style="margin:15px;padding:0px 10px 0px 30px;">
+        <div class="col-md-5 col-lg-5" style="align:left;align-self: center;align-content: center;padding:0px;">
+        <input type="file" name = "fileInput" id = "fileInput"  style="display:none;posotion:absolute;width:60px;height:30px;"/>
+            <a class="btn btn-w-m btn-outline btn-primary pull-left" id="addPrescription" style="font-size: 16px;margin: 3px;" onclick="fileInputClick()">
+                <i class="fa fa-plus"></i> Prescription
+            </a>
+        </div>
+        <div class="col-md-2 col-lg-2" style="">
+{#            <img src="../static/images/red_ten.png" style="height:85px;weight:85px;margin-top:-55px;">#}
+        </div>
+        <div class="col-md-offset-2 col-lg-offset-2 col-md-2 col-lg-2" style="">
+            <button type="button" class="btn btn-primary search" style="margin:3px;font-size: 16px;" onclick="evaluateR()">
+                <i class="fa fa-search"></i>  Evaluation
+            </button>
+        </div>
+    </div>
+
+    <div name="patient" class="row roundpill" style="border-radius: 3rem!important;background: white;margin: 20px;padding:8px 15px 8px 15px;height:162px;">
+        <div name="patientOperation" class="row">
+            <div class="col-sm-2 col-lg-2 col-md-2" style="align:center;align-self: center;align-content: center;">
+                <a class="btn btn-w-m btn-outline btn-primary pull-left" id="addPatient" style="font-size: 16px;width:70px;margin: 5px" data-toggle="modal" data-target="#myModal">
+                    <i class="fa fa-plus"></i> Patient
+                </a>
+            </div>
+            <div class="col-sm-4 col-md-3 col-lg-3">
+                <button type="button" class="btn btn-primary search" style="font-size: 16px;width:85px;margin:5px 5px 5px 30px;" onclick="deletePatient()">
+                    <i class="fa "></i>  Delete
+                </button>
+            </div>
+        </div>
+        <div name="patientInfo" class="row">
+            <div class=" col-md-9 col-lg-9" style="font-size: 16px;">
+                <table class="table" id="patient_table" style="font-size: 15px;">
+                    <tr>
+                        <td id="age">age: </td>
+                        <td id="sex">sex:</td>
+                    </tr>
+                    <tr>
+                        <td id="height">height: </td>
+                        <td id="weight">weight: </td>
+                    </tr>
+                    <tr>
+                        <td collapse="2" id="allergy">allergy: </td>
+                    </tr>
+                </table>
+            </div>
+            <div class=" col-md-3 col-lg-3" style="margin-top:-30px;">
+                <img src="../static/images/male.png" style="height:115px;">
+            </div>
+        </div>
+    </div>
+
+    <div name="diag" class="row roundpill" style="border-radius: 3rem!important;background: white;margin: 20px;padding:8px 15px 8px 15px;;height:220px;">
+        <div name="diagOperation"  class="row">
+            <div class="col-sm-1 col-md-1 col-lg-1">
+                <img src="../static/images/disease.png" style="height: 50px;margin-top:-10px;margin-left:-10px">
+            </div>
+            <div class="col-sm-4 col-md-4 col-lg-3">
+            {% csrf_token %}   <!--加入这行 -->
+                <input type="text" name="diagInput" placeholder="Select Diagnose" class="form-control" id="diagInput"  list="diagbatch_list" autocomplete="off" style="font-size: 14px;width:150px;margin:5px 0px 0px 10px;">
+                <datalist id="diagbatch_list">
+                </datalist>
+            </div>
+            <div class="col-sm-3 col-md-3 col-lg-3">
+            {% csrf_token %}   <!--加入这行 -->
+            <a class="btn btn-w-m btn-outline btn-primary pull-left" id="adddiag" style="font-size: 16px;width:50px;margin:5px 0px 0px 10px;float: left;" onclick="addDiag()" >
+                <i class="fa fa-plus"></i> Diagnose
+            </a>
+            </div>
+            <div class="col-lg-offset-1 col-sm-3 col-md-3 col-lg-3">
+                <button type="button" class="btn btn-primary search" style="font-size: 16px;width:85px;margin:5px 20px 0px 0px;" onclick="clearD(this)">
+                    <i class="fa "></i>  Clean
+                </button>
+            </div>
+        </div>
+        <div name="diagInfo" class="row" style="padding:3px;margin:5px;">
+            <table class="table table-striped" id="diag_table" style="font-size: 16px;width: 100%;padding:5px;">
+                <thead>
+                <tr>
+                    <th style="font-size: 16px;width:80%">Disease</th>
+                    <th style="font-size: 16px;width:20%;align:center;">Operation</th>
+                </tr>
+                </thead>
+                <tbody id="diagtbody" style="font-size: 15px;">
+    {#            <tr>#}
+    {#                <td>1</td>#}
+    {#                <td><img src="../static/images/delete.png" width="20" height="20" onclick="deleteMed("inputdata")"></td>#}
+    {#            </tr>#}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div name="drug" class="row roundpill" style="border-radius: 3rem!important;background: white;margin: 20px;padding:8px 15px 8px 15px;;height:280px;">
+        <div name="drugOperation"  class="row" style="">
+            <div name="drugImg" class="col-sm-1 col-md-1 col-lg-1">
+                <img src="../static/images/drug.png" style="height: 50px;margin-top:-10px;margin-left:-10px">
+            </div>
+            <div class="col-sm-4 col-md-4 col-lg-3">
+            {% csrf_token %}   <!--加入这行 -->
+                <input type="text" name="medInput" placeholder="Select Drug" class="form-control" id="medInput"  list="medbatch_list" autocomplete="off" style="font-size: 15px;width:150px;margin:5px 0px 0px 10px;;">
+                <datalist id="medbatch_list">
+                </datalist>
+            </div>
+            <div class="col-sm-3 col-md-3 col-lg-3">
+            {% csrf_token %}   <!--加入这行 -->
+            <a class="btn btn-w-m btn-outline btn-primary pull-left" id="addMed" style="font-size: 16px;width:50px;margin:5px 0px 0px 10px;;float: left;" onclick="addMed()" >
+                <i class="fa fa-plus"></i> Drug
+            </a>
+            </div>
+            <div class="col-lg-offset-1 col-sm-3 col-md-3 col-lg-3">
+                <button type="button" class="btn btn-primary search" style="font-size: 16px;width:85px;margin:5px 20px 0px 10px;" onclick="clearP(this)">
+                    <i class="fa "></i>  Clean
+                </button>
+            </div>
+        </div>
+        <div name="drugInfo"  class="row" style="padding:3px;margin:5px;">
+            <table class="table table-striped" id="med_table" style="font-size: 16px;width: 100%;padding:3px;">
+                <thead>
+                <tr>
+                    <th style="width:50%">drug</th>
+                    <th style="width:30%">duration</th>
+                    <th style="width:20%;align:center;">Operation</th>
+                </tr>
+                </thead>
+                <tbody id="presctbody" style="font-size: 15px;">
+    {#            <tr>#}
+    {#                <td>1</td>#}
+    {#                <td><img src="../static/images/delete.png" width="20" height="20" onclick="deleteMed("inputdata")"></td>#}
+    {#            </tr>#}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div style="clear: both;"></div>
+</div>
+
+
+<div id="analysis" style="border-radius: 3rem!important;background-color:lightgrey;border:grey solid 2px;float:left;width:51%;margin: 20px;padding:20px;height: 800px;">
+    <div style="float:left;padding-left:5px;">
+        <div class="title" style="float:left;"><h2  style="font-weight:800">    Evaluation Result:&nbsp; &nbsp;  </h2></div>
+        <div style="float: left;"><h2 id="evaluateResult" style="font-weight:800;"></h2></div>
+    </div>
+    <div style="clear: both"></div>
+    <div name="RiskTables" style="height:410px; border: grey solid 2px;border-radius: 3rem!important;background: white;margin: 5px 15px 15px 15px;padding:8px 15px 8px 15px;">
+        <div class="biaoti" style="margin-bottom:10px;"><h3 style="font-size: 20px;">Predictive medication regimens：</h3></div>
+        <table id="medicationRegimenTable" class="table table-striped" style="font-size: 14px">
+          <thead>
+                <tr class="biaoti">
+                    <th style="font-size: 16px;width:10%">Drug</th>
+                    <th style="font-size: 16px;width:5%">Duration</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="biaoti">
+                    <th style="width:5%">暂无数据</th>
+                    <th style="width:5%"> </th>
+                </tr>
+            </tbody>
+        </table>
+        <hr/>
+{#        <div style="margin-bottom:10px;"><h3>用药清单合理性：</h3></div>#}
+{#        <table id="errorDrugListTable"  class="table table-striped">#}
+{#          <thead>#}
+{#                <tr>#}
+{#                    <th style="width:5%">医生用药序列</th>#}
+{#                    <th style="width:5%">预测用药序列</th>#}
+{#                </tr>#}
+{#            </thead>#}
+{#            <tbody>#}
+{#                <tr>#}
+{#                    <th style="width:5%">暂无数据</th>#}
+{#                    <th style="width:5%"></th>#}
+{#                </tr>#}
+{#            </tbody>#}
+{#        </table>#}
+{#        <hr />#}
+        <div class="biaoti" style="margin-bottom:10px;"><h3 style="font-size: 20px;">Evaluation</h3></div>
+        <table id="errorTreatmentTable"  class="table table-striped" style="font-size: 14px">
+          <thead>
+                <tr class="biaoti">
+                    <th style="font-size: 16px;width:5%">Doctor medication regimen</th>
+                    <th style="font-size: 16px;width:5%">Predictive medication regimens</th>
+            </thead>
+            <tbody>
+                <tr class="biaoti">
+                    <th style="width:5%">暂无数据</th>
+                    <th style="width:5%"></th>
+                </tr>
+            </tbody>
+        </table>
+        </table>
+    </div>
+    <div id="drugRiskviz" style="float:left;align:center;width:95%;height: 275px;border: grey solid 2px;border-radius: 2rem!important;background: white;margin: 5px 15px 15px 15px;"></div>
+</div>
+
+
+<!-- 模态框（Modal） -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                    &times;
+                </button>
+                <h4 class="modal-title" id="myModalLabel">
+                    患者信息
+                </h4>
+            </div>
+            <form class="form-horizontal" id="form_data">
+			<div class="container">
+				<div class="row" style="padding-top:15px"><div class="col-md-12"></div> </div>
+				<div class="row" style="padding-top:5px">
+					<div class="col-md-1"></div>
+					<div class="col-md-1">性别:</div>
+					<div class="col-md-2">
+						<label class="radio-inline">
+							<input type="radio" name="sex" id="male" value="male" checked> 男
+						</label>
+						<label class="radio-inline">
+							<input type="radio" name="sex" id="female"  value="female"> 女
+						</label>
+					</div>
+					<div class="col-md-1"></div>
+				</div>
+                <div class="row" style="padding-top:10px"><div class="col-md-12"></div> </div>
+				<div class="row" style="padding-top:10px">
+					<div class="col-md-1"></div>
+					<div class="col-md-1">年龄: </div>
+					<div class="col-md-2">
+						<input type="text" id="age" name="age" style="float:left;"/>
+					</div>
+					<div class="col-md-2"></div>
+				</div>
+				<div class="row" style="padding-top:10px">
+					<div class="col-md-1"></div>
+					<div class="col-md-1">身高(cm): </div>
+					<div class="col-md-2">
+						<input type="text" id="height" name="height" style="float:left;"/>
+					</div>
+					<div class="col-md-2"></div>
+				</div>
+				<div class="row" style="padding-top:10px">
+					<div class="col-md-1"></div>
+					<div class="col-md-1">体重(kg): </div>
+					<div class="col-md-2">
+						<input type="text" id="weight" name="weight" style="float:left;"/>
+					</div>
+					<div class="col-md-2"></div>
+				</div>
+			</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭
+                </button>
+                <button type="button" onclick="addPatient()" data-dismiss="modal" class="btn btn-primary">
+                    确定
+                </button>
+            </div>
+            </form>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal -->
+</div>
+
+
+
+{% endblock %}
+{% block js %}
+<script type="text/javascript">
+    $(function () {
+        $('#myModal').bootstrapValidator({
+            fields: {
+                age: {
+                    message: '请输入正确的年龄',
+                    validators: {
+                        notEmpty: {
+                            message: '年龄不能为空'
+                        },
+                         stringLength: {
+                             min: 1,
+                             max: 3,
+                             message: '年龄长度必须在1到3之间'
+                         },
+                        regexp: {
+                            regexp: /^[0-9]+$/,
+                            message: '年龄只能包含数字'
+                        }
+                    }
+                },
+                height: {
+                    validators: {
+                        notEmpty: {
+                            message: '身高不能为空'
+                        },
+                        stringLength: {
+                            min: 2,
+                            max: 3,
+                            message: '身高必须在2到3位之间'
+                        },
+                        regexp: {
+                            regexp: /^[0-9]+$/,
+                            message: '身高只能包含数字'
+                        }
+                    }
+                },
+                weight: {
+                    validators: {
+                        notEmpty: {
+                            message: '体重不能为空'
+                        },
+                        stringLength: {
+                            min: 1,
+                            max: 3,
+                            message: '体重长度必须在1到3位之间'
+                        },
+                        regexp: {
+                            regexp: /^[0-9]+$/,
+                            message: '体重只能包含数字'
+                        }
+                    }
+                }
+            }
+        })
+    });
+
+    var medslist = [];
+    var diagslist = [];
+    var patient = [];
+    window.onload = function(){
+        var input_prescription = [];
+        var input_diags = [];
+        var input_patient = [];
+        localStorage.setItem("inputpatient",JSON.stringify(input_patient));
+        localStorage.setItem("inputdiags",JSON.stringify(input_diags));
+        localStorage.setItem("inputprescription",JSON.stringify(input_prescription));
+        if(localStorage.getItem("Meds")){
+            medslist = localStorage.getItem("Meds").split(",");
+            if (medslist == ""||medslist == null) {
+                medslist = localStorage.getItem("Meds").split(",");
+            }
+            for (var i = 0; i < medslist.length; i++) {
+                $('datalist#medbatch_list').append('<option value="' + medslist[i] + '">' + medslist[i] + '</option>');
+            }
+        }
+        if(localStorage.getItem("Diags")){
+            diagslist = localStorage.getItem("Diags").split(",");
+            if (diagslist == ""||diagslist == null) {
+                diagslist = localStorage.getItem("Diags").split(",");
+            }
+            for (var i = 0; i < diagslist.length; i++) {
+                $('datalist#diagbatch_list').append('<option value="' + diagslist[i] + '">' + diagslist[i] + '</option>');
+            }
+        }
+
+        {#alert(input_diags,input_prescription);#}
+        draw(input_diags,input_prescription);
+    {# 处方上传绑定change监听 #}
+        var $fileInput =  $("#fileInput");
+        $fileInput.change(function () {
+            if($(this).val() != ""){
+                addPrescription();
+            }
+        })
+    }
+    var drugRiskviz;
+    function draw(diag,presc) {
+        var hostAndPort=document.location.host;
+        var hostAddress = hostAndPort.substr(0,hostAndPort.length - 4);
+        var diagcypher = "";
+        if (diag == "" || diag == null)
+            diagcypher = diagcypher + "where d.diag = '休克'";
+        else{
+            diagcypher = "where d.diag = '"+ diag[0] + "'";
+            for(let j = 1; j < diag.length; j++){
+                diagcypher = diagcypher + "or d.diag = '" + diag[j] + "'";
+            }
+        }
+        var config = {
+            container_id: "drugRiskviz",
+            server_url: "bolt://"+hostAddress+"7687",
+            {#server_url: "bolt://localhost:7687",#}
+            server_user: "neo4j",
+            server_password: "sorts-swims-burglaries",
+            labels: {
+                "patient": {
+                    "caption": "pid",
+                    "age": "age",
+                    "height": "height",
+                    "sex": "sex",
+                    "weight":"weight",
+                    //"sizeCypher": "MATCH (n) WHERE id(n) = {id} MATCH (n)-[r]-() RETURN sum(r.weight) AS c"
+                },
+                "med": {
+                    "caption": "medName",
+                    "medSpec": "medSpec",
+                }
+            },
+            relationships: {
+                "huse": {
+                    "thickness": "weight",
+                    "caption": false
+                }
+            },
+            initial_cypher: "match(d:diag)<-[r]-(p:prescription)-[r2]->(m:med) " + diagcypher + " return d,r,p,r2,m"
+        };
+
+        drugRiskviz = new NeoVis.default(config);
+        drugRiskviz.render();
+    }
+
+    var token = $('input[name=csrfmiddlewaretoken]').val();
+
+    function evaluateR(){
+        var patient = [];
+        var presc =  [];
+        var diag =  [];
+        patient = JSON.parse(localStorage.getItem("inputpatient"));
+        diag = JSON.parse(localStorage.getItem("inputdiags"));
+        presc = JSON.parse(localStorage.getItem("inputprescription"));
+        if(patient == null || patient == "") {
+            patient.push(18);
+            patient.push("男");
+            patient.push(170);
+            patient.push(65);
+        }
+        if(presc == null || presc == "") {
+            presc.push("注射用奥沙利铂");
+            presc.push("盐酸利多卡因注射液");
+        }
+        if(diag == null || diag == "") {
+            diag.push("休克");
+        }
+        {#demo#}
+        diag = ['急性支气管炎', '支气管炎', '急性上呼吸道感染']
+        draw(diag, presc);
+        evaluateEco(patient, diag, presc);
+    }
+
+    function evaluateEco(patient,diag,presc) {
+        {#数据置空#}
+        $("#medicationRegimenTable tbody").empty();
+        $("#errorDrugListTable tbody").empty();
+        $("#errorTreatmentTable tbody").empty();
+        $('#evaluateResult').empty();
+
+        var patinetData = {
+            patient:JSON.stringify(patient),
+            diag:JSON.stringify(diag),
+            prescrpt:JSON.stringify(presc),
+            csrfmiddlewaretoken:$('[name="csrfmiddlewaretoken"]').val()
+        };
+        $.ajax({
+            url: "/DrugEco/evaluateEco/",
+            type: "POST",
+            data: patinetData,
+            success: function (data) {
+                fillData(patinetData, data);
+            },fail(e){
+                console.log(e);
+            }
+        })
+    }
+
+    function fillData(patinetData, data){
+        patinetData = patinetData;
+        let patient = patinetData.patient,
+            diag = eval(patinetData.diag),
+            prescrpt = eval(patinetData.prescrpt);
+         let prescrptD = [],
+             prescrptT = [];
+        for(let drugL of prescrpt) {
+            let aa = drugL.split('_');
+            let d = aa[0],
+                t = aa[1];
+            prescrptD.push(d);
+            prescrptT.push(t);
+        }
+
+        {# 用药方案 #}
+        var medicationRegimenbody = $('#medicationRegimenTable tbody');
+        medicationRegimenbody.empty();
+        var num_c = 0;
+        let Druglist = data.data.Druglist;
+        let res = {},
+            drug = [],
+            treatment = [];
+        for(let drugL of Druglist) {
+            num_c = num_c + 1;
+            let aa = drugL[drugL.length-1].split('_');  //有三个备选元素，选最后一个
+            let d = aa[0],
+                t = aa[1];
+            res[d] = t;
+            drug.push(d);
+            treatment.push(t);
+            var tr = $('<tr></tr>');
+            tr.append('<td>' + d + '</td>' + '<td>' + t + '</td>');
+            medicationRegimenbody.append(tr);
+        }
+        if(num_c == 0){
+            var tr = $('<tr></tr>');
+            tr.append("<td style='color:red'colspan='3'>"+ '无预测用药方案' +  '</td>');
+            medicationRegimenbody.append(tr);
+        }
+
+        {# 用药清单 #}
+        var drugListBody = $('#errorDrugListTable tbody');
+        drugListBody.empty();
+        let i = 0;
+        let newDrug = [],
+            newPrescript = [];
+        let setD = new Set(drug),
+            setP = [];
+        for(let d of prescrptD) {
+            if(setD.has(d)) {
+                setD.delete(d);
+                newDrug.push(d);
+                newPrescript.push(d);
+            } else {
+                setP.push(d);
+            }
+        }
+        setD = Array.from(setD);
+        newDrug = newDrug.concat(setD);
+        newPrescript = newPrescript.concat(setP);
+
+        while(i<newDrug.length || i<newPrescript.length) {
+            var tr = $('<tr></tr>');
+            let prescrptMed = i < newPrescript.length?newPrescript[i]:"";
+            let drugMed = i < newDrug.length?newDrug[i]:"";
+            if(prescrptMed === newDrug[i])
+                tr.append('<td>' + prescrptMed + '</td>' + '<td>' + drugMed + '</td>' + '<td style="width:0.1%">' + '<i class="fa fa-check fa-lg" aria-hidden="true"></i>' + '</td>');
+            else if(drugMed === "")
+                tr.append('<td>' + prescrptMed + '</td>' + '<td style="color: #E57373">' + '<s>' + "Is the medicine on the left side unnecessary？" + '</s>' + '</td>' + '<td style="width:0.1%">' + '<i class="fa fa-close fa-lg" aria-hidden="true"></i>' + '</td>');
+            else
+                tr.append('<td>' + prescrptMed + '</td>' + '<td style="color: #E57373">' + '<s>' + drugMed + '</s>' + '</td>' + '<td style="width:0.1%">' + '<i class="fa fa-close fa-lg" aria-hidden="true"></i>' + '</td>');
+            drugListBody.append(tr);
+            i++;
+        }
+        if(num_c == 0){
+            var tr = $('<tr></tr>');
+            tr.append("<td style='color:red'colspan='3'>"+ '无预测用药清单' +  '</td>');
+            drugListBody.append(tr);
+        }
+        {# 挑出用药方案中用药清单正确的进行比较 用药疗程 #}
+        var treatmentBody = $('#errorTreatmentTable tbody');
+        treatmentBody.empty();
+        i = 0;
+        while(i < prescrpt.length) {
+            var tr = $('<tr></tr>');
+            let prescrptMed = i < prescrpt[i].length?prescrpt[i].split("_")[0]:"";
+            let prescrptTreatment = i < prescrpt[i].length?prescrpt[i].split("_")[1]:"";
+            if(res[prescrptMed]) {
+                if(prescrptTreatment === res[prescrptMed])
+                    tr.append('<td>' + prescrptMed + '：' + prescrptTreatment + '</td>' + '<td>'+ prescrptMed  + '：' + res[prescrptMed] + '</td>' + '<td style="width:0.1%">' + '<i class="fa fa-check fa-lg" aria-hidden="true"></i>' + '</td>');
+                else
+                    tr.append('<td>' + prescrptMed + '：' + prescrptTreatment + '</td>' + '<td>'+ prescrptMed  + '：<span style="color: #E57373"><s>' + res[prescrptMed] + '</s></span>' + '</td>' + '<td style="width:0.1%">' + '<i class="fa fa-close fa-lg" aria-hidden="true"></i>' + '</td>');
+            } else {
+                tr.append('<td>' + prescrptMed + '：' + prescrptTreatment + '</td>' + '<td><span style="color: #E57373"> Is the medicine on the left side unnecessary？ </span>' + '</td>' + '<td style="width:0.1%">' + '<i class="fa fa-close fa-lg" aria-hidden="true"></i>' + '</td>');
+            }
+            treatmentBody.append(tr);
+            i++;
+        }
+        if(num_c == 0){
+            var tr = $('<tr></tr>');
+            tr.append("<td style='color:red'colspan='3'>"+ '无预测用药疗程' +  '</td>');
+            treatmentBody.append(tr);
+        }
+    }
+
+    function addPrescription(randomPrescription){
+        if(randomPrescription.length >= 1) {
+            var data = randomPrescription.split("\t");
+            if(data.length!=6) return ;
+            let age = data[0];
+            let sex = data[1];
+            let height = data[2];
+            let weight = data[3];
+            let input_diag = data[4].split(',');
+            let input_prescription = data[5].split(',');
+            var op = $("#operation");
+            var patienttbody = $("#patient_table tbody");
+            patienttbody.empty();
+            op.empty();
+            op.append("<img src=\"../static/images/delete.png\" width=\"20\" height=\"20\" onclick=\"deletePatient(this)\"/>")
+
+            {#增加 信息#}
+            {#var input_patient = JSON.parse(localStorage.getItem("inputpatient"));#}
+            var input_patient = [];
+            input_patient = input_patient.concat(age, sex, height, weight);
+            localStorage.setItem("inputpatient", JSON.stringify(input_patient));
+            var tr = $('<tr></tr>');
+            sex = sex=="男"?"male":"female"
+            tr.append('<td>' + "sex：" + sex + '</td>');
+            tr.append('<td>' + "age：" + age + '</td>');
+            {#tr.append('<td>' + "性别：" + sex + '</td>');#}
+            {#tr.append('<td>' + "年龄：" + age + '</td>');#}
+            var tr2 = $('<tr></tr>');
+            tr2.append('<td>' + "height：" + height + 'cm' + '</td>');
+            tr2.append('<td>' + "weight：" + weight + 'kg' + '</td>');
+            {#tr2.append('<td>' + "身高：" + height + 'cm' + '</td>');#}
+            {#tr2.append('<td>' + "体重：" + weight + 'kg' + '</td>');#}
+            patienttbody.append(tr);
+            patienttbody.append(tr2);
+
+            {#增加 诊断#}
+            var diagtbody = $("#diag_table tbody");
+            diagtbody.empty();
+            for(let diag of input_diag) {
+                var tr = $('<tr></tr>');
+                tr.append('<td>' + diag + '</td>' + '<td>' + "<img src=\"../static/images/delete.png\" width=\"20\" height=\"20\" onclick=\"deleteMed(this)\"/>" + '</td>');
+                diagtbody.append(tr);
+            }
+            document.getElementById("diagInput").value = "";
+            localStorage.setItem("inputdiags", JSON.stringify(input_diag));
+
+            {#增加 药品#}
+            var medtbody = $("#med_table tbody");
+            medtbody.empty();
+            for(let medication of input_prescription) {
+                var tr = $('<tr></tr>');
+                let [med, duration] = medication.split('_')
+                tr.append('<td>' + med + '</td>' + '<td>' + duration + '</td>' + '<td>' + "<img src=\"../static/images/delete.png\" width=\"20\" height=\"20\" onclick=\"deleteMed(this)\"/>" + '</td>');
+                medtbody.append(tr);
+            }
+            document.getElementById("medInput").value = "";
+            {#var input_prescription = JSON.parse(localStorage.getItem("inputprescription"));#}
+            localStorage.setItem("inputprescription", JSON.stringify(input_prescription));
+        } else {
+            var objFile = document.getElementById("fileInput");
+            if(objFile.value == "") {
+                alert("不能空")
+            }
+            var files = $('#fileInput').prop('files');//获取到文件列表
+            if(files.length == 0){
+                alert('请选择文件');
+            }else{
+                {#localStorage.setItem("inputpatient", []);#}
+                {#localStorage.setItem("inputdiags", []);#}
+                {#localStorage.setItem("inputprescription", []);#}
+                var reader = new FileReader();//新建一个FileReader
+                reader.readAsText(files[0], "UTF-8");//读取文件
+                reader.onload = function(evt){ //读取完文件之后会回来这里
+                    var fileString = evt.target.result; // 读取文件内容
+                    var data = fileString.split("\t");
+                    if(data.length!=6) return ;
+                    let age = data[0];
+                    let sex = data[1];
+                    let height = data[2];
+                    let weight = data[3];
+                    let input_diag = data[4].split(',');
+                    let input_prescription = data[5].split(',');
+                    var op = $("#operation");
+                    var patienttbody = $("#patient_table tbody");
+                    patienttbody.empty();
+                    op.empty();
+                    op.append("<img src=\"../static/images/delete.png\" width=\"20\" height=\"20\" onclick=\"deletePatient(this)\"/>")
+
+                    {#增加 信息#}
+                    {#var input_patient = JSON.parse(localStorage.getItem("inputpatient"));#}
+                    var input_patient = [];
+                    input_patient = input_patient.concat(age, sex, height, weight);
+                    localStorage.setItem("inputpatient", JSON.stringify(input_patient));
+                    var tr = $('<tr></tr>');
+                    tr.append('<td>' + "sex：" + sex + '</td>');
+                    tr.append('<td>' + "age：" + age + '</td>');
+                    {#tr.append('<td>' + "性别：" + sex + '</td>');#}
+                    {#tr.append('<td>' + "年龄：" + age + '</td>');#}
+                    var tr2 = $('<tr></tr>');
+                    tr2.append('<td>' + "height：" + height + 'cm' + '</td>');
+                    tr2.append('<td>' + "weight：" + weight + 'kg' + '</td>');
+                    {#tr2.append('<td>' + "身高：" + height + 'cm' + '</td>');#}
+                    {#tr2.append('<td>' + "体重：" + weight + 'kg' + '</td>');#}
+                    patienttbody.append(tr);
+                    patienttbody.append(tr2);
+
+                    {#增加 诊断#}
+                    var diagtbody = $("#diag_table tbody");
+                    diagtbody.empty();
+                    for(let diag of input_diag) {
+                        var tr = $('<tr></tr>');
+                        tr.append('<td>' + diag + '</td>' + '<td>' + "<img src=\"../static/images/delete.png\" width=\"20\" height=\"20\" onclick=\"deleteMed(this)\"/>" + '</td>');
+                        diagtbody.append(tr);
+                    }
+                    document.getElementById("diagInput").value = "";
+                    localStorage.setItem("inputdiags", JSON.stringify(input_diag));
+
+                    {#增加 药品#}
+                    var medtbody = $("#med_table tbody");
+                    medtbody.empty();
+                    for(let med of input_prescription) {
+                        var tr = $('<tr></tr>');
+                        tr.append('<td>' + med + '</td>' + '<td>' + "<img src=\"../static/images/delete.png\" width=\"20\" height=\"20\" onclick=\"deleteMed(this)\"/>" + '</td>');
+                        medtbody.append(tr);
+                    }
+                    document.getElementById("medInput").value = "";
+                    {#var input_prescription = JSON.parse(localStorage.getItem("inputprescription"));#}
+                    localStorage.setItem("inputprescription", JSON.stringify(input_prescription));
+                }
+            }
+        }
+
+    }
+
+    function addPatient(){
+        {#var form_data = $("#form_data").serialize();#}
+        var sexval=$('input:radio[name="sex"]:checked').val();
+        let sex = sexval == 'male'?'男':'女';
+        var age = $('input#age').val();
+        var height = $('input#height').val();
+        var weight = $('input#weight').val();
+        let input_patient = [];
+        input_patient.push(age);
+        input_patient.push(sex);
+        input_patient.push(height);
+        input_patient.push(weight);
+        localStorage.setItem("inputpatient",JSON.stringify(input_patient));
+        var op = $("#operation");
+        var patienttbody = $("#patient_table tbody");
+        patienttbody.empty();
+        op.empty();
+        op.append("<img src=\"../static/images/delete.png\" width=\"20\" height=\"20\" onclick=\"deletePatient(this)\"/>")
+        var tr = $('<tr></tr>');
+        tr.append('<td>' + "sex：" + sex + '</td>');
+        tr.append('<td>' + "age：" + age + '</td>');
+        {#tr.append('<td>' + "性别：" + sex + '</td>');#}
+        {#tr.append('<td>' + "年龄：" + age + '</td>');#}
+        var tr2 = $('<tr></tr>');
+        tr2.append('<td>' + "height：" + height + 'cm' + '</td>');
+        tr2.append('<td>' + "weight：" + weight + 'kg' + '</td>');
+        {#tr2.append('<td>' + "身高：" + height + 'cm' + '</td>');#}
+        {#tr2.append('<td>' + "体重：" + weight + 'kg' + '</td>');#}
+        {#tr.append('<td>' + inputdata + '</td>' + '<td>' + "<img src=\"../static/images/delete.png\" width=\"30\" height=\"30\" onclick=\"javascript:deleteMed(\""+inputdata+"\");\"/>" + '</td>');#}
+        {#tr.append('<td>' + inputdata + '</td>' + '<td>' + "<img src=\"../static/images/delete.png\" width=\"20\" height=\"20\" onclick=\"deleteMed(this)\"/>" + '</td>');#}
+        patienttbody.append(tr);
+        patienttbody.append(tr2);
+        patienttbody.append(tr3);
+    }
+
+    function addDiag(){
+        $(document).ready(function() {
+            var inputdata = $('input#diagInput').val();
+            if(inputdata == null || inputdata == ""){
+                alert("诊断不能为空");
+            }
+            else if (diagslist.indexOf(inputdata)!= -1){
+                var diagtbody = $("#diag_table tbody");
+                var tr = $('<tr></tr>');
+                {#tr.append('<td>' + inputdata + '</td>' + '<td>' + "<img src=\"../static/images/delete.png\" width=\"30\" height=\"30\" onclick=\"javascript:deleteMed(\""+inputdata+"\");\"/>" + '</td>');#}
+                tr.append('<td>' + inputdata + '</td>' + '<td>' + "<img src=\"../static/images/delete.png\" width=\"20\" height=\"20\" onclick=\"deleteDiag(this)\"/>" + '</td>');
+                diagtbody.append(tr);
+                document.getElementById("diagInput").value = "";
+                var input_diag = JSON.parse(localStorage.getItem("inputdiags"));
+                input_diag.push(inputdata);
+                localStorage.setItem("inputdiags", JSON.stringify(input_diag));
+            }
+            else{
+                alert("请选择正确的诊断");
+            }
+        });
+    }
+
+    function addMed(){
+        $(document).ready(function() {
+            var inputdata = $('input#medInput').val();
+            if(inputdata == null || inputdata == ""){
+                alert("药品不能为空");
+            }
+            else if (medslist.indexOf(inputdata)!= -1){
+                var medtbody = $("#med_table tbody");
+                var tr = $('<tr></tr>');
+                {#tr.append('<td>' + inputdata + '</td>' + '<td>' + "<img src=\"../static/images/delete.png\" width=\"30\" height=\"30\" onclick=\"javascript:deleteMed(\""+inputdata+"\");\"/>" + '</td>');#}
+                tr.append('<td>' + inputdata + '</td>' + '<td>' + "<img src=\"../static/images/delete.png\" width=\"20\" height=\"20\" onclick=\"deleteMed(this)\"/>" + '</td>');
+                medtbody.append(tr);
+                document.getElementById("medInput").value = "";
+                var input_prescription = JSON.parse(localStorage.getItem("inputprescription"));
+                input_prescription.push(inputdata);
+                localStorage.setItem("inputprescription", JSON.stringify(input_prescription));
+            }
+            else{
+                alert("请选择正确的药品");
+            }
+        });
+    }
+    {#中文#}
+    let prescriptionDemo = [
+        {#"47\t女\t162\t60\t胃-食管反流病,慢性胃炎\t聚普瑞锌颗粒(瑞莱生)_6天,羔羊胃提取物维b12颗粒_6天", // 正确#}
+        {#"86\t男\t163\t69\t头晕和眩晕,高脂血症,不适和疲劳\t黄芪_7天,山药_7天,防风_5天,麦冬_4天", // 错误#}
+        {#"59\t女\t164\t52\t支气管哮喘，非危重,咳嗽,哮喘,甲状腺机能减退症,变应性鼻炎,可疑疾病观察,高脂血症,急性上呼吸道感染,头晕和眩晕\t兰索拉唑胶囊(达克普隆)_7天,盐酸伊托必利片(唯比力)_7天,防风_6天", // 正确#}
+        {#"79\t男\t168\t60\t肺恶性肿瘤,肺恶性肿瘤(Ⅳ期),肺癌术后,皮炎\t奥氮平片（欧兰宁）_7天,茯苓_7天,麦芽_7天", // 正确#}
+        {#"59\t女\t166\t70\t不适和疲劳,睡眠障碍,膝关节痛,可疑疾病观察,便秘,焦虑障碍,轻度认知障碍,疲劳综合征\t艾司唑仑片_7天,柴胡_4天,羌活_4天,车前子_7天", // 错误#}
+        {#"5\t女\t103\t14\t急性上呼吸道感染,全身炎症反应综合征\t注射用头孢曲松钠(罗氏芬)_1天,0.9%氯化钠注射液(软袋)_1天,小儿豉翘清热颗粒_3天", // 正确#}
+        {#"4\t男\t106\t17.5\t急性支气管炎,支气管炎,急性上呼吸道感染\t阿莫西林克拉维酸钾干混悬剂(奥先)_3天,吸入用复方异丙托溴铵溶液(可必特)_1天,吸入用布地奈德混悬液(普米克令舒)_1天",  // 错误#}
+        "4 years\t男\t106\t17.5\tacute bronchitis,bronchitis,acute upper respiratory tract infection\tAmoxicillin and Clavulanate Potassium for Oral Suspension_three days,Combivent_one day,Pulmicort Respules_one day",  // 上一条的英文
+        {#"4\t男\t106\t17.5\tacute bronchitis,bronchitis,acute upper respiratory tract infection\tAmoxicillin and Clavulanate Potassium for Oral Suspension_3天,Compound Ipratropium Bromide Solution for Inhalation(Combivent)_1天,Budesonide Suspension for Inhalation(PULMICORT RESPULES)_1天",  // 上一条的英文#}
+    ];
+    function fileInputClick(){
+        //处方读取方式一：从本地选择txt文件输入。触发点击input标签,onload中有监听fileinput。
+        {#document.getElementById("fileInput").click();#}
+        //处方读取方式二：随机选择本页面定义的测试处方列表
+        var randomPrescription = prescriptionDemo[(Math.floor(Math.random()*10)%prescriptionDemo.length)];
+        addPrescription(randomPrescription);
+    }
+
+
+    function deletePatient(p){
+        var patienttbody = $("#patient_table tbody");
+        patienttbody.empty();
+        let input_patient = [];
+        localStorage.setItem("inputpatient",JSON.stringify(input_patient));
+    }
+    function deleteMed(tdmed){
+        var tr = tdmed.parentElement.parentElement;//获取tr button的父亲的父亲
+        var index = tr.rowIndex;//获取是第几行
+        var table = document.getElementById("med_table");//获取table
+        table.deleteRow(index);//table删除第index行
+
+        var input_prescription = JSON.parse(localStorage.getItem("inputprescription"));
+        let tempP = []
+        for (var i = 0; i < input_prescription.length; i++) {
+            if (i + 1 != index)
+                tempP.push(input_prescription[i])
+        }
+        localStorage.setItem("inputprescription", JSON.stringify(tempP));
+    }
+    function clearP(t){
+        $("#med_table tbody").html("");
+
+        var input_prescription = JSON.parse(localStorage.getItem("inputprescription"));
+        let tempP = []
+        localStorage.setItem("inputprescription", JSON.stringify(tempP));
+    }
+    function deleteDiag(tddiag){
+        var tr = tddiag.parentElement.parentElement;//获取tr button的父亲的父亲
+        var index = tr.rowIndex;//获取是第几行
+        var table = document.getElementById("diag_table");//获取table
+        table.deleteRow(index);//table删除第index行
+
+        var input_diags = JSON.parse(localStorage.getItem("inputdiags"));
+        tempD = []
+        for (var i = 0; i < input_diags.length; i++) {
+            if (i + 1 != index)
+                tempD.push(input_diags[i])
+        }
+        localStorage.setItem("inputdiags", JSON.stringify(tempD));
+    }
+    function clearD(t){
+        $("#diag_table tbody").html("");
+
+        var input_diags = JSON.parse(localStorage.getItem("inputdiags"));
+        let tempD = []
+        localStorage.setItem("inputdiags", JSON.stringify(tempD));
+    }
+
+</script>
+
+
+{% endblock %}

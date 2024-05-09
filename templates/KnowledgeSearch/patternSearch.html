@@ -1,0 +1,221 @@
+﻿{% extends "homepage.html" %}
+
+{% block css_js %}
+{#    <script type="text/javascript" src="static/js/DrugRisk/index.js"></script>#}
+    <script type="text/javascript" src="http://libs.baidu.com/jquery/1.10.2/jquery.min.js"></script>
+    <script type="text/javascript"
+            src="https://cdn.staticfile.org/twitter-bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    <script type="text/javascript"
+            src="https://cdn.bootcss.com/bootstrap-validator/0.5.3/js/bootstrapValidator.js"></script>
+    <link href="static/neo4jd3/neo4jd3.min.css" rel="stylesheet">
+    <script type="text/javascript" src="static/js/DrugRisk/neovis.js"></script>
+    <script type="text/javascript" src="static/js/DrugRisk/index.js"></script>
+    <script src="static/neo4jd3/d3.v4.min.js"></script>
+    <script src="static/neo4jd3/neo4jd3.min.js"></script>
+{% endblock %}
+{%block css %}
+
+<style>
+    #viz {
+        width: 75%;
+        height: 500px;
+        border: 1px solid lightgray;
+        font: 22pt arial;
+        margin: 10px;
+    }
+    label {
+        display: inline-block;
+        width: 100px;
+    }
+    input{
+        width:200px;
+    }
+</style>
+{% endblock %}
+
+
+
+{% block content %}
+<div class="row  border-bottom">
+    <div class="col-lg-12">
+        <div class="tab_title">
+            <ul class="nav nav-pills">
+                <li>
+                    <a href="/diagSearch">疾病查询</a>
+                </li>
+                <li>
+                    <a href="/medSearch">药品查询</a>
+                </li>
+{#                <li class="current">#}
+{#                    <a href="/patternSearch.html">频繁用药模式查询</a>#}
+{#                </li>#}
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-12">
+        <form class="form-inline wrap_search">
+            <div class="row  m-t p-w-m">
+
+                <div class="form-group m-r m-l">
+                    <label>疾病</label>
+                </div>
+
+                <div class="form-group">
+                    <input type="text" name="medInput" placeholder="请输入疾病" class="form-control" id="medInput"  list="patternbatch_list" autocomplete="off">
+                    <datalist id="patternbatch_list">
+                    </datalist>
+{#                    <input type="text" placeholder="请选择药品" class="form-control" id="medInput">#}
+                </div>
+
+
+                <div class="form-group">
+                    <div class="input-group">
+                        <span class="input-group-btn">
+                            <button type="button" class="btn  btn-primary search" onclick="search()">
+                                <i class="fa fa-search"></i>查询
+                            </button>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <hr>
+        </form>
+    </div>
+</div>
+
+
+<div id="patternSearchviz" style="float:left;width: 60%;height: 500px;border: 1px solid lightgray;margin: 5px;"></div>
+<div id="analysis" style="float:left;width:38%;height: 500px;margin: 5px;">
+    <div><h3>该药物在历史真实处方中出现{{ count }}次</h3></div>
+    <div style="margin-bottom:10px;"><h3>常用于疾病：</h3></div>
+    <table id="coMedTable" class="table table-striped">
+      <thead>
+        <tr>
+            <th>药物</th>
+            <th>次数</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td> </td>
+          <td> </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+</div>
+
+{% endblock %}
+{% block js %}
+<script type="text/javascript">
+    window.onload = draw();
+    var patternSearchviz;
+    function draw() {
+        var med = document.getElementById("medInput").value;
+        cypher = "match(m1:med{name:\"50%葡萄糖注射液\"}) match(m2:med) return distinct m1,m2,algo.linkprediction.commonNeighbors(m1,m2) as score order by score desc limit 10"
+        if (med != "")
+            cypher = "match(m1:med{name:\""+med+"\"}) match(m2:med) return distinct m1,m2,algo.linkprediction.commonNeighbors(m1,m2) as score order by score desc limit 10"
+        var config = {
+            container_id: "patternSearchviz",
+            server_url: "bolt://localhost:7687",
+            {#server_url: "bolt://it.ye-soft.com:7687",#}
+            server_user: "neo4j",
+            server_password: "sorts-swims-burglaries",
+            labels: {
+                "patient": {
+                    "caption": "pid",
+                    "age": "age",
+                    "height": "height",
+                    "sex": "sex",
+                    "weight":"weight",
+                    //"sizeCypher": "MATCH (n) WHERE id(n) = {id} MATCH (n)-[r]-() RETURN sum(r.weight) AS c"
+                },
+                "med": {
+                    "caption": "medName",
+                    "medSpec": "medSpec",
+                }
+            },
+            relationships: {
+                "huse": {
+                    "thickness": "weight",
+                    "caption": false
+                }
+            },
+            initial_cypher: cypher
+        };
+
+        neo4jd3viz = new NeoVis.default(config);
+        neo4jd3viz.render();
+        console.log(neo4jd3viz);
+
+    }
+
+    var token = $('input[name=csrfmiddlewaretoken]').val();
+    function search(){
+        var med = document.getElementById("medInput").value
+        draw(med);
+        patternSearch(med);
+    }
+
+    function patternSearch(med) {
+        {#数据置空#}
+        $("#count h3").empty();
+        $("#count h3").append(+'     在历史真实处方中共出现     次');
+        $("#coMedTable tbody").empty();
+
+        var data = {
+            med:med,
+            {#csrfmiddlewaretoken: token,#}
+            csrfmiddlewaretoken:$('[name="csrfmiddlewaretoken"]').val()
+            {#csrfmiddlewaretoken: '{{ csrf_token }}'#}
+        };
+        console.log(data);
+        $.ajax({
+            url: "/KnowledgeSearch/patternSearch/",
+            type: "POST",
+            data: data,
+            success: function (data) {
+                console.log(JSON.stringify(data));
+                fillData(med,data);
+            }
+        })
+    }
+
+    function fillData(med,data){
+    {#数量#}
+        var counth3=$("#count h3");
+        counth3.append(med+' 在历史真实处方中共出现  '+data.data.count+'  次')
+    {#联用药物#}
+        var coMedtbody=$("#coMedTable tbody");
+        $(data.data.coMedList).each(function (index){
+            var val=data.data.coMedList[index];
+            var tr=$('<tr></tr>');
+            tr.append('<td>'+ val.med + '</td>' + '<td>'+ val.frequency + '</td>');
+            coMedtbody.append(tr);
+        });
+    }
+
+    $(document).ready(function() {
+        $('input#medInput').bind('keyup', function () {
+            alert("here3");
+            var inputdata = $('input#medInput').val();
+            var medslist = localStorage.getItem("Meds").split(",");
+            console.log(medslist)
+            console.log(medslist[2])
+            for (var i = 0; i < medslist.length; i++) {
+                if (medslist[i].indexOf(inputdata) != -1)
+                    $('datalist#patternbatch_list').append('<option value="' + medslist[i] + '">' + medslist[i] + '</option>');
+            }
+        });
+    });
+
+</script>
+
+
+{% endblock %}
+
