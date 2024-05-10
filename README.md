@@ -11,6 +11,13 @@ conda env create -f environment.yaml
 conda activate venv
 ```
 ## Deployment
+### Pre-Step: Download Model File
+Before setting up the Neo4j database, you need to download the model file from Google Drive. Follow these steps:
+
+1. Visit the following URL: [final_model_DDI_True.model](https://drive.google.com/file/d/1Ftnst83JILo4cngF5rBlkD736hxt2tVA/view?usp=drive_link)
+2. Download the file named `final_model_DDI_True.model`.
+3. Place the downloaded file in the directory `/data/drugEco/transformer_Top3_treatment/` within your project folder.
+
 ### Step 1: Neo4j Database Setup
 
 1. **Install Neo4j Community Edition:**
